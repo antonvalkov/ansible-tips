@@ -1,0 +1,46 @@
+- name: Configure Chrony and Install Chrony
+  hosts: all
+  become: yes
+
+  vars:
+    chrony_service: "chronyd"  # Update the service:q name here
+
+  tasks:
+    - name: Ensure directory exists for Chrony configuration
+      ansible.builtin.file:
+        path: /etc/chrony
+        state: directory
+
+    - name: Set fqdn variable
+      set_fact:
+        fqdn: "{{ ansible_fqdn }}"
+
+    - name: Debug fqdn variable
+      ansible.builtin.debug:
+        msg: "FQDN: {{ fqdn }}"
+
+    - name: Remove existing Chrony configuration file
+      ansible.builtin.file:
+        path: /etc/chrony.conf
+        state: absent
+      ignore_errors: yes
+
+    - name: Set Chrony configuration
+      ansible.builtin.template:
+        src: templates/chrony.conf.j2
+        dest: /etc/chrony.conf
+      vars:
+        fqdn: "{{ ansible_fqdn }}"
+      notify: Restart Chrony
+
+    - name: Install Chrony
+      ansible.builtin.package:
+        name: chrony
+        state: present
+
+  handlers:
+    - name: Restart Chrony
+      ansible.builtin.service:
+        name: "{{ chrony_service }}"
+        state: restarted
+
