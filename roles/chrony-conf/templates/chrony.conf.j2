@@ -2,25 +2,24 @@
 
 # Set the NTP servers depend on domain name
 
-{% if fqdn.endswith('o-dc.ba.uwv.nl') %}
+{% if ansible_fqdn.endswith('o-dc.ba.uwv.nl') %}
 server 10.178.128.21 iburst
 server 10.178.128.22 iburst
-{% elif fqdn.endswith('t-dc.ba.uwv.nl') %}
+{% elif ansible_fqdn.endswith('t-dc.ba.uwv.nl') %}
 server 10.178.128.18 iburst
 server 10.178.128.19 iburst
-{% elif fqdn.endswith('a-dc.ba.uwv.nl') %}
+{% elif ansible_fqdn.endswith('a-dc.ba.uwv.nl') %}
 server 10.178.128.15 iburst
 server 10.178.128.16 iburst
-{% elif fqdn.endswith('p-dc.ba.uwv.nl') %}
+{% elif ansible_fqdn.endswith('p-dc.ba.uwv.nl') %}
 server 10.178.128.10 iburst
 server 10.178.128.12 iburst
 {% endif %}
 
-# Basic configiguration
+# Basic configuration
 
 driftfile /var/lib/chrony/drift
 makestep 1.0 3
 rtcsync
 keyfile /etc/chrony.keys
 logdir /var/log/chrony
-
