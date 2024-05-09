@@ -1,0 +1,26 @@
+---
+- hosts: all
+  gather_facts: yes
+  become: yes
+
+  tasks:
+  - name: Install chrony
+    package:
+      name: chrony
+      state: present
+
+  - name: Set NTP servers from DNS
+    template:
+      src: chrony.conf.j2
+      dest: /etc/chrony.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    notify: restart chronyd
+
+  handlers:
+  - name: restart chronyd
+    service:
+      name: chronyd
+      state: restarted

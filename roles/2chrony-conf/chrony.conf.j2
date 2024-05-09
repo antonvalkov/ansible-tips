@@ -1,0 +1,15 @@
+# Ansible Managed
+
+# Set the NTP servers depend on domain name
+
+server {{ ansible_dns.nameservers[0] }} iburst
+server {{ ansible_dns.nameservers[1] }} iburst
+
+# Basic configiguration
+
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+keyfile /etc/chrony.keys
+logdir /var/log/chrony
+

@@ -1,0 +1,12 @@
+# tasks/main.yml
+---
+- name: Install Chrony
+  ansible.builtin.package:
+    name: chrony
+    state: present
+
+- name: Set Chrony configuration
+  ansible.builtin.template:
+    src: templates/chrony.conf.j2
+    dest: /etc/chrony.conf
+  notify: Restart Chrony

@@ -1,0 +1,7 @@
+# meta/main.yml
+---
+galaxy_info:
+  role_name: chrony-conf
+  author: anton.valkov@dxc.com
+  description: Configure and install Chrony
+  company: DXC
