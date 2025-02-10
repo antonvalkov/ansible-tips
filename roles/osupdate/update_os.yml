@@ -1,0 +1,97 @@
+---
+- name: Update OS on Debian and Rocky Linux servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install dnf-utils on Rocky Linux-based systems
+      dnf:
+        name: dnf-utils
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Update Debian-based systems
+      apt:
+        update_cache: yes
+        upgrade: dist
+      register: debian_update_result
+      when: ansible_os_family == "Debian"
+
+    - name: Check if reboot is required on Debian-based systems
+      stat:
+        path: /var/run/reboot-required
+      register: debian_reboot_required
+      when: ansible_os_family == "Debian"
+
+    - name: Update Rocky Linux-based systems
+      dnf:
+        name: '*'
+        state: latest
+      register: rocky_update_result
+      when: ansible_os_family == "RedHat"
+
+    - name: Determine if reboot is required on Rocky Linux-based systems
+      shell: needs-restarting -r
+      register: rocky_reboot_required
+      failed_when: rocky_reboot_required.rc not in [0, 1]
+      changed_when: rocky_reboot_required.rc == 1
+      when: ansible_os_family == "RedHat"
+
+    - name: Reboot the server if needed (Debian)
+      reboot:
+        msg: "Rebooting Debian server after updates"
+        pre_reboot_delay: 5
+        post_reboot_delay: 10
+      when:
+        - ansible_os_family == "Debian"
+        - debian_reboot_required.stat.exists
+
+    - name: Reboot the server if needed (Rocky Linux)
+      reboot:
+        msg: "Rebooting Rocky Linux server after updates"
+        pre_reboot_delay: 5
+        post_reboot_delay: 10
+      when:
+        - ansible_os_family == "RedHat"
+        - rocky_reboot_required.changed
+
+- name: Reboot the Ansible control node
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Install dnf-utils on control node (if Rocky Linux)
+      dnf:
+        name: dnf-utils
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Check if reboot is required on Debian-based systems (control node)
+      stat:
+        path: /var/run/reboot-required
+      register: control_node_reboot_required
+      when: ansible_os_family == "Debian"
+
+    - name: Determine if reboot is required on Rocky Linux-based systems (control node)
+      shell: needs-restarting -r
+      register: control_node_rocky_reboot_required
+      failed_when: control_node_rocky_reboot_required.rc not in [0, 1]
+      changed_when: control_node_rocky_reboot_required.rc == 1
+      when: ansible_os_family == "RedHat"
+
+    - name: Reboot the Ansible control node if needed (Debian)
+      reboot:
+        msg: "Rebooting Ansible control node (Debian) after updates"
+        pre_reboot_delay: 5
+        post_reboot_delay: 10
+      when:
+        - ansible_os_family == "Debian"
+        - control_node_reboot_required.stat.exists
+
+    - name: Reboot the Ansible control node if needed (Rocky Linux)
+      reboot:
+        msg: "Rebooting Ansible control node (Rocky Linux) after updates"
+        pre_reboot_delay: 5
+        post_reboot_delay: 10
+      when:
+        - ansible_os_family == "RedHat"
+        - control_node_rocky_reboot_required.changed
+
