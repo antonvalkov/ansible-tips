@@ -1,0 +1,35 @@
+---
+- name: Gather NTP servers information using chronyc
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Run chronyc sources command to get NTP servers
+      ansible.builtin.shell: |
+        chronyc sources | awk '/^\^[^*]/ {print $2}'
+      register: chronyc_output
+      ignore_errors: yes  # Continue even if the command fails
+
+    - name: Debug chronyc_output
+      ansible.builtin.debug:
+        var: chronyc_output.stdout_lines
+
+    - name: Extract NTP server names
+      ansible.builtin.set_fact:
+        ntp_servers: "{{ chronyc_output.stdout_lines | default([]) }}"
+
+    - name: Debug ntp_servers
+      ansible.builtin.debug:
+        var: ntp_servers
+
+    - name: Save NTP servers to a file on the Ansible server
+      ansible.builtin.copy:
+        content: |
+          {% for host in play_hosts %}
+          {% set host_ip = hostvars[host]['ansible_default_ipv4']['address'] %}
+          {% set ntp_servers = hostvars[host]['ntp_servers'] | join(', ') %}
+          {{ host_ip }}: {{ ntp_servers }}
+          {% endfor %}
+        dest: /tmp/ntp_servers.txt
+      delegate_to: localhost
+      run_once: yes
