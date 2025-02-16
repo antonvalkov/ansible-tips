@@ -1,0 +1,34 @@
+---
+- name: Gather system information from all hosts
+  hosts: bmit_*
+  become: yes
+  gather_facts: yes  # Ensure facts are gathered
+  tasks:
+    - name: Gather memory information
+      ansible.builtin.shell: |
+        free -h | awk '/^Mem:/ {print "RAM: " $2} /^Swap:/ {print "Swap: " $2}'
+      register: memory_info
+
+    - name: Check if LVM is in use
+      ansible.builtin.shell: |
+        if lsblk | grep -q 'lvm'; then
+          echo "LVM: Yes"
+        else
+          echo "LVM: No"
+        fi
+      register: lvm_info
+
+    - name: Display memory information
+      ansible.builtin.debug:
+        msg: "{{ memory_info.stdout_lines }}"
+
+    - name: Display LVM information
+      ansible.builtin.debug:
+        msg: "{{ lvm_info.stdout }}"
+
+    - name: Create a summary file on localhost
+      ansible.builtin.lineinfile:
+        path: /etc/ansible/sysinfo.txt  # Change this to your desired file path
+        line: "{{ inventory_hostname }}: {{ memory_info.stdout_lines[0] }}, {{ memory_info.stdout_lines[1] }}, {{ lvm_info.stdout }}"
+        create: yes
+      delegate_to: localhost
